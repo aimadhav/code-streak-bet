@@ -25,6 +25,29 @@ export const ChallengeChart: React.FC<ChallengeChartProps> = ({
     target: Math.floor((targetCount / data.length) * (index + 1)), // Linear target progression
   }));
 
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div style={{
+          backgroundColor: '#1A1A1A',
+          border: '1px solid #2A2A2A',
+          borderRadius: '8px',
+          padding: '12px',
+          color: '#FFFFFF'
+        }}>
+          <p style={{ marginBottom: '4px' }}>{`Date: ${label}`}</p>
+          <p style={{ color: '#00FF7F', margin: '4px 0' }}>
+            {`Questions Solved: ${payload[0]?.value || 0}`}
+          </p>
+          <p style={{ color: '#AAAAAA', margin: '4px 0' }}>
+            {`Target: ${payload[1]?.value || 0}`}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="w-full h-64 mt-4">
       <h4 style={{ 
@@ -47,14 +70,7 @@ export const ChallengeChart: React.FC<ChallengeChartProps> = ({
             stroke="#AAAAAA" 
             fontSize={12}
           />
-          <Tooltip 
-            contentStyle={{
-              backgroundColor: '#1A1A1A',
-              border: '1px solid #2A2A2A',
-              borderRadius: '8px',
-              color: '#FFFFFF'
-            }}
-          />
+          <Tooltip content={<CustomTooltip />} />
           <Line 
             type="monotone" 
             dataKey="solved" 

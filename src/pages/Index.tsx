@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { HeroSection } from '@/components/HeroSection';
 import { ChallengeForm } from '@/components/ChallengeForm';
 import { ChallengeSidebar } from '@/components/ChallengeSidebar';
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ const Index = () => {
   const [activeChallenges, setActiveChallenges] = useState([]);
   const [pastChallenges, setPastChallenges] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showChallengeForm, setShowChallengeForm] = useState(false);
 
   // Mock data for demonstration
   useEffect(() => {
@@ -79,11 +81,26 @@ const Index = () => {
     alert('Login functionality will be implemented with Supabase Auth');
   };
 
+  const handleGetStarted = () => {
+    if (user) {
+      setShowChallengeForm(true);
+      // Smooth scroll to challenge form
+      setTimeout(() => {
+        const element = document.getElementById('challenge-form');
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    } else {
+      handleLogin();
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0D0D0D' }}>
         <div className="text-center">
-          <Code2 className="w-12 h-12 mx-auto mb-4" style={{ color: '#00FF7F' }} />
+          <Code2 className="w-12 h-12 mx-auto mb-4 animate-pulse" style={{ color: '#00FF7F' }} />
           <p style={{ color: '#AAAAAA', fontSize: '1rem' }}>Loading...</p>
         </div>
       </div>
@@ -92,58 +109,61 @@ const Index = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0D0D0D' }}>
-        <div className="text-center max-w-md mx-auto p-6">
-          <div className="mb-8">
-            <Code2 className="w-16 h-16 mx-auto mb-4" style={{ color: '#00FF7F' }} />
-            <h1 style={{ 
-              fontSize: '3rem', 
+      <div className="min-h-screen" style={{ backgroundColor: '#0D0D0D' }}>
+        <HeroSection onGetStarted={handleGetStarted} />
+        
+        {/* Login Section */}
+        <section className="py-20" style={{ backgroundColor: '#1A1A1A' }}>
+          <div className="max-w-md mx-auto px-4 text-center">
+            <h2 style={{ 
+              fontSize: '2rem', 
               fontWeight: 700, 
               color: '#FFFFFF', 
-              lineHeight: 1.2,
               marginBottom: '16px'
             }}>
-              LeetCode Streak Bet
-            </h1>
-            <p style={{ color: '#AAAAAA', fontSize: '1.25rem', lineHeight: 1.5 }}>
-              Commit to your coding goals with financial accountability
+              Ready to Start?
+            </h2>
+            <p style={{ color: '#AAAAAA', fontSize: '1.1rem', marginBottom: '32px' }}>
+              Sign in to create your first coding challenge
             </p>
+            
+            <div className="space-y-4">
+              <Button
+                onClick={handleLogin}
+                className="w-full"
+                style={{
+                  backgroundColor: '#00FF7F',
+                  color: '#0D0D0D',
+                  borderRadius: '12px',
+                  padding: '0 24px',
+                  height: '56px',
+                  fontWeight: 600,
+                  fontSize: '1.1rem'
+                }}
+              >
+                Sign in with Google
+              </Button>
+              
+              <Button
+                onClick={handleLogin}
+                variant="outline"
+                className="w-full"
+                style={{
+                  backgroundColor: 'transparent',
+                  color: '#FFFFFF',
+                  border: '2px solid #2A2A2A',
+                  borderRadius: '12px',
+                  padding: '0 24px',
+                  height: '56px',
+                  fontWeight: 600,
+                  fontSize: '1.1rem'
+                }}
+              >
+                Sign in with GitHub
+              </Button>
+            </div>
           </div>
-          
-          <Button
-            onClick={handleLogin}
-            className="w-full mb-4"
-            style={{
-              backgroundColor: '#00FF7F',
-              color: '#0D0D0D',
-              borderRadius: '8px',
-              padding: '0 16px',
-              height: '48px',
-              fontWeight: 500,
-              fontSize: '1rem'
-            }}
-          >
-            Sign in with Google
-          </Button>
-          
-          <Button
-            onClick={handleLogin}
-            variant="outline"
-            className="w-full"
-            style={{
-              backgroundColor: 'transparent',
-              color: '#FFFFFF',
-              border: '1px solid #2A2A2A',
-              borderRadius: '8px',
-              padding: '0 16px',
-              height: '48px',
-              fontWeight: 500,
-              fontSize: '1rem'
-            }}
-          >
-            Sign in with GitHub
-          </Button>
-        </div>
+        </section>
       </div>
     );
   }
@@ -151,7 +171,11 @@ const Index = () => {
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#0D0D0D' }}>
       {/* Header */}
-      <header className="border-b" style={{ borderColor: '#2A2A2A', padding: '16px 0' }}>
+      <header className="sticky top-0 z-50 border-b backdrop-blur-sm" style={{ 
+        borderColor: '#2A2A2A', 
+        padding: '16px 0',
+        backgroundColor: 'rgba(13, 13, 13, 0.8)'
+      }}>
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Code2 className="w-8 h-8" style={{ color: '#00FF7F' }} />
@@ -189,23 +213,28 @@ const Index = () => {
         </div>
       </header>
 
+      {/* Hero Section */}
+      {!showChallengeForm && <HeroSection onGetStarted={handleGetStarted} />}
+
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Challenge Form */}
-          <div className="lg:col-span-2">
-            <ChallengeForm userLeetcodeId={user.leetcode_username} />
+      {showChallengeForm && (
+        <main className="max-w-7xl mx-auto px-4 py-12">
+          <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+            {/* Challenge Form */}
+            <div className="xl:col-span-3">
+              <ChallengeForm userLeetcodeId={user.leetcode_username} />
+            </div>
+            
+            {/* Challenge Sidebar */}
+            <div className="xl:col-span-1">
+              <ChallengeSidebar 
+                activeChallenges={activeChallenges}
+                pastChallenges={pastChallenges}
+              />
+            </div>
           </div>
-          
-          {/* Challenge Sidebar */}
-          <div className="lg:col-span-1">
-            <ChallengeSidebar 
-              activeChallenges={activeChallenges}
-              pastChallenges={pastChallenges}
-            />
-          </div>
-        </div>
-      </main>
+        </main>
+      )}
     </div>
   );
 };
