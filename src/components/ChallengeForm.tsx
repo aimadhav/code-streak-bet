@@ -4,14 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Sparkles, Target, Clock, DollarSign } from 'lucide-react';
 
 interface ChallengeFormProps {
   userLeetcodeId: string;
+  onGetStarted: () => void;
+  isLoggedIn: boolean;
 }
 
-export const ChallengeForm: React.FC<ChallengeFormProps> = ({ userLeetcodeId }) => {
+export const ChallengeForm: React.FC<ChallengeFormProps> = ({ 
+  userLeetcodeId, 
+  onGetStarted,
+  isLoggedIn 
+}) => {
   const [goalType, setGoalType] = useState<'daily' | 'weekly' | 'custom'>('daily');
   const [dailyQuestions, setDailyQuestions] = useState('1');
   const [dailyDays, setDailyDays] = useState('7');
@@ -25,6 +30,12 @@ export const ChallengeForm: React.FC<ChallengeFormProps> = ({ userLeetcodeId }) 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isLoggedIn) {
+      onGetStarted();
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
@@ -69,6 +80,14 @@ export const ChallengeForm: React.FC<ChallengeFormProps> = ({ userLeetcodeId }) 
     } else {
       return `I will solve ${customQuestions || '___'} questions in ${customDays || '___'} days`;
     }
+  };
+
+  const handleCardClick = (type: 'daily' | 'weekly' | 'custom') => {
+    if (!isLoggedIn) {
+      onGetStarted();
+      return;
+    }
+    setGoalType(type);
   };
 
   return (
@@ -163,236 +182,266 @@ export const ChallengeForm: React.FC<ChallengeFormProps> = ({ userLeetcodeId }) 
                   Choose your commitment:
                 </Label>
                 
-                <RadioGroup value={goalType} onValueChange={(value: 'daily' | 'weekly' | 'custom') => setGoalType(value)}>
-                  <div className="grid gap-4">
-                    {/* Daily Goal */}
-                    <div className="relative group">
-                      <div className={`p-6 rounded-xl transition-all duration-300 cursor-pointer ${
-                        goalType === 'daily' 
-                          ? 'bg-gradient-to-r from-green-500/10 to-green-400/5 border-2 border-green-500 shadow-lg shadow-green-500/20' 
-                          : 'bg-zinc-900/50 border-2 border-zinc-800 hover:border-zinc-700'
-                      }`}>
-                        <div className="flex items-center space-x-4">
-                          <RadioGroupItem value="daily" id="daily" className="text-primary w-5 h-5" />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-4 flex-wrap">
-                              <Label htmlFor="daily" style={{ 
-                                color: '#FFFFFF', 
-                                cursor: 'pointer', 
-                                fontSize: '1.1rem', 
-                                fontWeight: 500 
-                              }}>
-                                Daily Consistency: I will solve
-                              </Label>
-                              <Input
-                                type="number"
-                                placeholder="1"
-                                value={dailyQuestions}
-                                onChange={(e) => setDailyQuestions(e.target.value)}
-                                disabled={goalType !== 'daily'}
-                                className="w-20 text-center"
-                                style={{ 
-                                  backgroundColor: '#0D0D0D', 
-                                  border: '1px solid #2A2A2A',
-                                  color: '#FFFFFF',
-                                  borderRadius: '8px'
-                                }}
-                              />
-                              <span style={{ color: '#AAAAAA' }}>questions per day for</span>
-                              <Input
-                                type="number"
-                                placeholder="7"
-                                value={dailyDays}
-                                onChange={(e) => setDailyDays(e.target.value)}
-                                disabled={goalType !== 'daily'}
-                                className="w-20 text-center"
-                                style={{ 
-                                  backgroundColor: '#0D0D0D', 
-                                  border: '1px solid #2A2A2A',
-                                  color: '#FFFFFF',
-                                  borderRadius: '8px'
-                                }}
-                              />
-                              <span style={{ color: '#AAAAAA' }}>days</span>
-                            </div>
-                            <p className="text-sm mt-2" style={{ color: '#666' }}>
-                              Perfect for building daily coding habits
-                            </p>
-                          </div>
-                        </div>
+                <div className="grid gap-4">
+                  {/* Daily Goal */}
+                  <div 
+                    className={`p-6 rounded-xl transition-all duration-300 cursor-pointer ${
+                      goalType === 'daily' 
+                        ? 'bg-gradient-to-r from-green-500/10 to-green-400/5 border-2 border-green-500 shadow-lg shadow-green-500/20' 
+                        : 'bg-zinc-900/50 border-2 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/70'
+                    }`}
+                    onClick={() => handleCardClick('daily')}
+                  >
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-4 h-4 rounded-full border-2 ${
+                          goalType === 'daily' 
+                            ? 'bg-green-500 border-green-500' 
+                            : 'border-zinc-500'
+                        }`} />
+                        <Label style={{ 
+                          color: '#FFFFFF', 
+                          cursor: 'pointer', 
+                          fontSize: '1.1rem', 
+                          fontWeight: 500 
+                        }}>
+                          Daily Consistency
+                        </Label>
                       </div>
-                    </div>
-
-                    {/* Weekly Goal */}
-                    <div className="relative group">
-                      <div className={`p-6 rounded-xl transition-all duration-300 cursor-pointer ${
-                        goalType === 'weekly' 
-                          ? 'bg-gradient-to-r from-green-500/10 to-green-400/5 border-2 border-green-500 shadow-lg shadow-green-500/20' 
-                          : 'bg-zinc-900/50 border-2 border-zinc-800 hover:border-zinc-700'
-                      }`}>
-                        <div className="flex items-center space-x-4">
-                          <RadioGroupItem value="weekly" id="weekly" className="text-primary w-5 h-5" />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-4 flex-wrap">
-                              <Label htmlFor="weekly" style={{ 
-                                color: '#FFFFFF', 
-                                cursor: 'pointer', 
-                                fontSize: '1.1rem', 
-                                fontWeight: 500 
-                              }}>
-                                Weekly Target: I will solve
-                              </Label>
-                              <Input
-                                type="number"
-                                placeholder="15"
-                                value={weeklyQuestions}
-                                onChange={(e) => setWeeklyQuestions(e.target.value)}
-                                disabled={goalType !== 'weekly'}
-                                className="w-20 text-center"
-                                style={{ 
-                                  backgroundColor: '#0D0D0D', 
-                                  border: '1px solid #2A2A2A',
-                                  color: '#FFFFFF',
-                                  borderRadius: '8px'
-                                }}
-                              />
-                              <span style={{ color: '#AAAAAA' }}>questions per week for</span>
-                              <Input
-                                type="number"
-                                placeholder="1"
-                                value={weeklyWeeks}
-                                onChange={(e) => setWeeklyWeeks(e.target.value)}
-                                disabled={goalType !== 'weekly'}
-                                className="w-20 text-center"
-                                style={{ 
-                                  backgroundColor: '#0D0D0D', 
-                                  border: '1px solid #2A2A2A',
-                                  color: '#FFFFFF',
-                                  borderRadius: '8px'
-                                }}
-                              />
-                              <span style={{ color: '#AAAAAA' }}>weeks</span>
-                            </div>
-                            <p className="text-sm mt-2" style={{ color: '#666' }}>
-                              Flexible weekly goals with room to breathe
-                            </p>
-                          </div>
+                      
+                      {isLoggedIn && goalType === 'daily' && (
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <span style={{ color: '#AAAAAA' }}>I will solve</span>
+                          <Input
+                            type="number"
+                            placeholder="1"
+                            value={dailyQuestions}
+                            onChange={(e) => setDailyQuestions(e.target.value)}
+                            className="w-20 text-center"
+                            style={{ 
+                              backgroundColor: '#0D0D0D', 
+                              border: '1px solid #2A2A2A',
+                              color: '#FFFFFF',
+                              borderRadius: '8px'
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <span style={{ color: '#AAAAAA' }}>questions per day for</span>
+                          <Input
+                            type="number"
+                            placeholder="7"
+                            value={dailyDays}
+                            onChange={(e) => setDailyDays(e.target.value)}
+                            className="w-20 text-center"
+                            style={{ 
+                              backgroundColor: '#0D0D0D', 
+                              border: '1px solid #2A2A2A',
+                              color: '#FFFFFF',
+                              borderRadius: '8px'
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <span style={{ color: '#AAAAAA' }}>days</span>
                         </div>
-                      </div>
-                    </div>
-
-                    {/* Custom Goal */}
-                    <div className="relative group">
-                      <div className={`p-6 rounded-xl transition-all duration-300 cursor-pointer ${
-                        goalType === 'custom' 
-                          ? 'bg-gradient-to-r from-green-500/10 to-green-400/5 border-2 border-green-500 shadow-lg shadow-green-500/20' 
-                          : 'bg-zinc-900/50 border-2 border-zinc-800 hover:border-zinc-700'
-                      }`}>
-                        <div className="flex items-center space-x-4">
-                          <RadioGroupItem value="custom" id="custom" className="text-primary w-5 h-5" />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-4 flex-wrap">
-                              <Label htmlFor="custom" style={{ 
-                                color: '#FFFFFF', 
-                                cursor: 'pointer', 
-                                fontSize: '1.1rem', 
-                                fontWeight: 500 
-                              }}>
-                                Custom Challenge: I will solve
-                              </Label>
-                              <Input
-                                type="number"
-                                placeholder="30"
-                                value={customQuestions}
-                                onChange={(e) => setCustomQuestions(e.target.value)}
-                                disabled={goalType !== 'custom'}
-                                className="w-24 text-center"
-                                style={{ 
-                                  backgroundColor: '#0D0D0D', 
-                                  border: '1px solid #2A2A2A',
-                                  color: '#FFFFFF',
-                                  borderRadius: '8px'
-                                }}
-                              />
-                              <span style={{ color: '#AAAAAA' }}>questions in</span>
-                              <Input
-                                type="number"
-                                placeholder="30"
-                                value={customDays}
-                                onChange={(e) => setCustomDays(e.target.value)}
-                                disabled={goalType !== 'custom'}
-                                className="w-24 text-center"
-                                style={{ 
-                                  backgroundColor: '#0D0D0D', 
-                                  border: '1px solid #2A2A2A',
-                                  color: '#FFFFFF',
-                                  borderRadius: '8px'
-                                }}
-                              />
-                              <span style={{ color: '#AAAAAA' }}>days</span>
-                            </div>
-                            <p className="text-sm mt-2" style={{ color: '#666' }}>
-                              Design your own challenge timeline
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                      )}
+                      
+                      <p className="text-sm" style={{ color: '#666' }}>
+                        Perfect for building daily coding habits
+                      </p>
                     </div>
                   </div>
-                </RadioGroup>
+
+                  {/* Weekly Goal */}
+                  <div 
+                    className={`p-6 rounded-xl transition-all duration-300 cursor-pointer ${
+                      goalType === 'weekly' 
+                        ? 'bg-gradient-to-r from-green-500/10 to-green-400/5 border-2 border-green-500 shadow-lg shadow-green-500/20' 
+                        : 'bg-zinc-900/50 border-2 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/70'
+                    }`}
+                    onClick={() => handleCardClick('weekly')}
+                  >
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-4 h-4 rounded-full border-2 ${
+                          goalType === 'weekly' 
+                            ? 'bg-green-500 border-green-500' 
+                            : 'border-zinc-500'
+                        }`} />
+                        <Label style={{ 
+                          color: '#FFFFFF', 
+                          cursor: 'pointer', 
+                          fontSize: '1.1rem', 
+                          fontWeight: 500 
+                        }}>
+                          Weekly Target
+                        </Label>
+                      </div>
+                      
+                      {isLoggedIn && goalType === 'weekly' && (
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <span style={{ color: '#AAAAAA' }}>I will solve</span>
+                          <Input
+                            type="number"
+                            placeholder="15"
+                            value={weeklyQuestions}
+                            onChange={(e) => setWeeklyQuestions(e.target.value)}
+                            className="w-20 text-center"
+                            style={{ 
+                              backgroundColor: '#0D0D0D', 
+                              border: '1px solid #2A2A2A',
+                              color: '#FFFFFF',
+                              borderRadius: '8px'
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <span style={{ color: '#AAAAAA' }}>questions per week for</span>
+                          <Input
+                            type="number"
+                            placeholder="1"
+                            value={weeklyWeeks}
+                            onChange={(e) => setWeeklyWeeks(e.target.value)}
+                            className="w-20 text-center"
+                            style={{ 
+                              backgroundColor: '#0D0D0D', 
+                              border: '1px solid #2A2A2A',
+                              color: '#FFFFFF',
+                              borderRadius: '8px'
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <span style={{ color: '#AAAAAA' }}>weeks</span>
+                        </div>
+                      )}
+                      
+                      <p className="text-sm" style={{ color: '#666' }}>
+                        Flexible weekly goals with room to breathe
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Custom Goal */}
+                  <div 
+                    className={`p-6 rounded-xl transition-all duration-300 cursor-pointer ${
+                      goalType === 'custom' 
+                        ? 'bg-gradient-to-r from-green-500/10 to-green-400/5 border-2 border-green-500 shadow-lg shadow-green-500/20' 
+                        : 'bg-zinc-900/50 border-2 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/70'
+                    }`}
+                    onClick={() => handleCardClick('custom')}
+                  >
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-4 h-4 rounded-full border-2 ${
+                          goalType === 'custom' 
+                            ? 'bg-green-500 border-green-500' 
+                            : 'border-zinc-500'
+                        }`} />
+                        <Label style={{ 
+                          color: '#FFFFFF', 
+                          cursor: 'pointer', 
+                          fontSize: '1.1rem', 
+                          fontWeight: 500 
+                        }}>
+                          Custom Challenge
+                        </Label>
+                      </div>
+                      
+                      {isLoggedIn && goalType === 'custom' && (
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <span style={{ color: '#AAAAAA' }}>I will solve</span>
+                          <Input
+                            type="number"
+                            placeholder="30"
+                            value={customQuestions}
+                            onChange={(e) => setCustomQuestions(e.target.value)}
+                            className="w-24 text-center"
+                            style={{ 
+                              backgroundColor: '#0D0D0D', 
+                              border: '1px solid #2A2A2A',
+                              color: '#FFFFFF',
+                              borderRadius: '8px'
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <span style={{ color: '#AAAAAA' }}>questions in</span>
+                          <Input
+                            type="number"
+                            placeholder="30"
+                            value={customDays}
+                            onChange={(e) => setCustomDays(e.target.value)}
+                            className="w-24 text-center"
+                            style={{ 
+                              backgroundColor: '#0D0D0D', 
+                              border: '1px solid #2A2A2A',
+                              color: '#FFFFFF',
+                              borderRadius: '8px'
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <span style={{ color: '#AAAAAA' }}>days</span>
+                        </div>
+                      )}
+                      
+                      <p className="text-sm" style={{ color: '#666' }}>
+                        Design your own challenge timeline
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* Stake Amount */}
-              <div className="space-y-4">
-                <Label htmlFor="stake" style={{ 
-                  color: '#FFFFFF', 
-                  fontWeight: 600, 
-                  fontSize: '1.1rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}>
-                  <DollarSign className="w-5 h-5" style={{ color: '#00FF7F' }} />
-                  Your stake (₹)
-                </Label>
-                
-                <div className="relative">
-                  <Input
-                    id="stake"
-                    type="number"
-                    placeholder="500"
-                    value={stakeAmount}
-                    onChange={(e) => setStakeAmount(e.target.value)}
-                    required
-                    className="text-xl font-medium"
-                    style={{ 
-                      backgroundColor: '#0D0D0D', 
-                      border: '2px solid #2A2A2A',
-                      borderRadius: '12px',
-                      padding: '20px 24px',
-                      color: '#FFFFFF',
-                      fontSize: '1.25rem',
-                      height: '64px'
-                    }}
-                  />
+              {/* Stake Amount - Only show if logged in */}
+              {isLoggedIn && (
+                <div className="space-y-4">
+                  <Label htmlFor="stake" style={{ 
+                    color: '#FFFFFF', 
+                    fontWeight: 600, 
+                    fontSize: '1.1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <DollarSign className="w-5 h-5" style={{ color: '#00FF7F' }} />
+                    Your stake (₹)
+                  </Label>
+                  
+                  <div className="relative">
+                    <Input
+                      id="stake"
+                      type="number"
+                      placeholder="500"
+                      value={stakeAmount}
+                      onChange={(e) => setStakeAmount(e.target.value)}
+                      required
+                      className="text-xl font-medium"
+                      style={{ 
+                        backgroundColor: '#0D0D0D', 
+                        border: '2px solid #2A2A2A',
+                        borderRadius: '12px',
+                        padding: '20px 24px',
+                        color: '#FFFFFF',
+                        fontSize: '1.25rem',
+                        height: '64px'
+                      }}
+                    />
+                  </div>
+                  
+                  <div className="p-4 rounded-xl" style={{ 
+                    backgroundColor: 'rgba(0, 255, 127, 0.05)', 
+                    border: '1px solid rgba(0, 255, 127, 0.2)' 
+                  }}>
+                    <p style={{ color: '#00FF7F', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                      💡 <strong>How it works:</strong> This amount is only charged if you fail to complete your challenge. 
+                      Success means you keep every rupee and gain the satisfaction of achieving your goal!
+                    </p>
+                  </div>
                 </div>
-                
-                <div className="p-4 rounded-xl" style={{ 
-                  backgroundColor: 'rgba(0, 255, 127, 0.05)', 
-                  border: '1px solid rgba(0, 255, 127, 0.2)' 
-                }}>
-                  <p style={{ color: '#00FF7F', fontSize: '0.9rem', lineHeight: 1.5 }}>
-                    💡 <strong>How it works:</strong> This amount is only charged if you fail to complete your challenge. 
-                    Success means you keep every rupee and gain the satisfaction of achieving your goal!
-                  </p>
-                </div>
-              </div>
+              )}
 
               {/* Submit Button */}
               <div className="pt-4">
                 <Button
                   type="submit"
-                  disabled={isSubmitting || !stakeAmount}
+                  disabled={isSubmitting || (isLoggedIn && !stakeAmount)}
                   className="w-full text-xl font-semibold relative overflow-hidden group"
                   style={{
                     backgroundColor: '#00FF7F',
@@ -407,7 +456,12 @@ export const ChallengeForm: React.FC<ChallengeFormProps> = ({ userLeetcodeId }) 
                 >
                   <div className="flex items-center justify-center gap-3">
                     <Sparkles className="w-6 h-6" />
-                    {isSubmitting ? 'Creating Your Challenge...' : 'Start My Challenge'}
+                    {!isLoggedIn 
+                      ? 'Sign In to Start Challenge' 
+                      : isSubmitting 
+                        ? 'Creating Your Challenge...' 
+                        : 'Start My Challenge'
+                    }
                   </div>
                 </Button>
               </div>

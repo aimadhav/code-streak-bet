@@ -4,18 +4,30 @@ import { HeroSection } from '@/components/HeroSection';
 import { ChallengeForm } from '@/components/ChallengeForm';
 import { ChallengeSidebar } from '@/components/ChallengeSidebar';
 import { Button } from "@/components/ui/button";
-import { LogOut, User, Code2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { LogOut, User, Code2, Target, Clock, DollarSign, Sparkles } from 'lucide-react';
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
   const [activeChallenges, setActiveChallenges] = useState([]);
   const [pastChallenges, setPastChallenges] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showChallengeForm, setShowChallengeForm] = useState(false);
+  const [showSignInDialog, setShowSignInDialog] = useState(false);
 
   // Mock data for demonstration
   useEffect(() => {
-    // Simulate user authentication
+    // Simulate loading
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+  }, []);
+
+  const handleGetStarted = () => {
+    setShowSignInDialog(true);
+  };
+
+  const handleLogin = () => {
+    // Mock login - in real app this would be Supabase Auth
     setUser({
       id: '1',
       email: 'john.doe@example.com',
@@ -68,32 +80,13 @@ const Index = () => {
       }
     ]);
 
-    setIsLoading(false);
-  }, []);
+    setShowSignInDialog(false);
+  };
 
   const handleLogout = () => {
     setUser(null);
-    // TODO: Implement Supabase logout
-  };
-
-  const handleLogin = () => {
-    // TODO: Implement Supabase authentication
-    alert('Login functionality will be implemented with Supabase Auth');
-  };
-
-  const handleGetStarted = () => {
-    if (user) {
-      setShowChallengeForm(true);
-      // Smooth scroll to challenge form
-      setTimeout(() => {
-        const element = document.getElementById('challenge-form');
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 100);
-    } else {
-      handleLogin();
-    }
+    setActiveChallenges([]);
+    setPastChallenges([]);
   };
 
   if (isLoading) {
@@ -103,67 +96,6 @@ const Index = () => {
           <Code2 className="w-12 h-12 mx-auto mb-4 animate-pulse" style={{ color: '#00FF7F' }} />
           <p style={{ color: '#AAAAAA', fontSize: '1rem' }}>Loading...</p>
         </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen" style={{ backgroundColor: '#0D0D0D' }}>
-        <HeroSection onGetStarted={handleGetStarted} />
-        
-        {/* Login Section */}
-        <section className="py-20" style={{ backgroundColor: '#1A1A1A' }}>
-          <div className="max-w-md mx-auto px-4 text-center">
-            <h2 style={{ 
-              fontSize: '2rem', 
-              fontWeight: 700, 
-              color: '#FFFFFF', 
-              marginBottom: '16px'
-            }}>
-              Ready to Start?
-            </h2>
-            <p style={{ color: '#AAAAAA', fontSize: '1.1rem', marginBottom: '32px' }}>
-              Sign in to create your first coding challenge
-            </p>
-            
-            <div className="space-y-4">
-              <Button
-                onClick={handleLogin}
-                className="w-full"
-                style={{
-                  backgroundColor: '#00FF7F',
-                  color: '#0D0D0D',
-                  borderRadius: '12px',
-                  padding: '0 24px',
-                  height: '56px',
-                  fontWeight: 600,
-                  fontSize: '1.1rem'
-                }}
-              >
-                Sign in with Google
-              </Button>
-              
-              <Button
-                onClick={handleLogin}
-                variant="outline"
-                className="w-full"
-                style={{
-                  backgroundColor: 'transparent',
-                  color: '#FFFFFF',
-                  border: '2px solid #2A2A2A',
-                  borderRadius: '12px',
-                  padding: '0 24px',
-                  height: '56px',
-                  fontWeight: 600,
-                  fontSize: '1.1rem'
-                }}
-              >
-                Sign in with GitHub
-              </Button>
-            </div>
-          </div>
-        </section>
       </div>
     );
   }
@@ -188,53 +120,139 @@ const Index = () => {
             </h1>
           </div>
           
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <User className="w-5 h-5" style={{ color: '#AAAAAA' }} />
-              <span style={{ color: '#FFFFFF', fontSize: '1rem' }}>
-                Welcome back, {user.name}
-              </span>
+          {user ? (
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <User className="w-5 h-5" style={{ color: '#AAAAAA' }} />
+                <span style={{ color: '#FFFFFF', fontSize: '1rem' }}>
+                  Welcome back, {user.name}
+                </span>
+              </div>
+              <Button
+                onClick={handleLogout}
+                variant="outline"
+                size="sm"
+                style={{
+                  backgroundColor: 'transparent',
+                  color: '#AAAAAA',
+                  border: '1px solid #2A2A2A',
+                  borderRadius: '8px'
+                }}
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
             </div>
+          ) : (
             <Button
-              onClick={handleLogout}
-              variant="outline"
-              size="sm"
+              onClick={handleGetStarted}
               style={{
-                backgroundColor: 'transparent',
-                color: '#AAAAAA',
-                border: '1px solid #2A2A2A',
-                borderRadius: '8px'
+                backgroundColor: '#00FF7F',
+                color: '#0D0D0D',
+                borderRadius: '8px',
+                fontWeight: 600
               }}
             >
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
+              Get Started
             </Button>
-          </div>
+          )}
         </div>
       </header>
 
       {/* Hero Section */}
-      {!showChallengeForm && <HeroSection onGetStarted={handleGetStarted} />}
+      <HeroSection onGetStarted={handleGetStarted} />
 
       {/* Main Content */}
-      {showChallengeForm && (
-        <main className="max-w-7xl mx-auto px-4 py-12">
-          <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-            {/* Challenge Form */}
-            <div className="xl:col-span-3">
-              <ChallengeForm userLeetcodeId={user.leetcode_username} />
-            </div>
-            
-            {/* Challenge Sidebar */}
+      <main className="max-w-7xl mx-auto px-4 py-12">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+          {/* Challenge Form */}
+          <div className="xl:col-span-3">
+            <ChallengeForm 
+              userLeetcodeId={user?.leetcode_username || 'your_username'} 
+              onGetStarted={handleGetStarted}
+              isLoggedIn={!!user}
+            />
+          </div>
+          
+          {/* Challenge Sidebar */}
+          {user && (
             <div className="xl:col-span-1">
               <ChallengeSidebar 
                 activeChallenges={activeChallenges}
                 pastChallenges={pastChallenges}
               />
             </div>
+          )}
+        </div>
+      </main>
+
+      {/* Sign In Dialog */}
+      <Dialog open={showSignInDialog} onOpenChange={setShowSignInDialog}>
+        <DialogContent className="sm:max-w-md" style={{
+          backgroundColor: '#1A1A1A',
+          border: '1px solid #2A2A2A',
+          borderRadius: '16px'
+        }}>
+          <DialogHeader>
+            <DialogTitle style={{ 
+              fontSize: '1.5rem', 
+              fontWeight: 700, 
+              color: '#FFFFFF',
+              textAlign: 'center',
+              marginBottom: '16px'
+            }}>
+              Ready to Start Your Challenge?
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 p-4">
+            <p style={{ 
+              color: '#AAAAAA', 
+              fontSize: '1rem', 
+              textAlign: 'center',
+              marginBottom: '24px'
+            }}>
+              Sign in to create your first coding challenge and start your journey
+            </p>
+            
+            <div className="space-y-3">
+              <Button
+                onClick={handleLogin}
+                className="w-full"
+                style={{
+                  backgroundColor: '#00FF7F',
+                  color: '#0D0D0D',
+                  borderRadius: '12px',
+                  padding: '0 24px',
+                  height: '48px',
+                  fontWeight: 600,
+                  fontSize: '1rem'
+                }}
+              >
+                Sign in with Google
+              </Button>
+              
+              <Button
+                onClick={handleLogin}
+                variant="outline"
+                className="w-full"
+                style={{
+                  backgroundColor: 'transparent',
+                  color: '#FFFFFF',
+                  border: '2px solid #2A2A2A',
+                  borderRadius: '12px',
+                  padding: '0 24px',
+                  height: '48px',
+                  fontWeight: 600,
+                  fontSize: '1rem'
+                }}
+              >
+                Sign in with GitHub
+              </Button>
+            </div>
           </div>
-        </main>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
