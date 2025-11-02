@@ -6,7 +6,7 @@ import { ChallengeSidebar } from '@/components/ChallengeSidebar';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LogOut, User, Code2, Wallet, Sparkles } from 'lucide-react';
-import { useFreighterWallet } from '@/hooks/useFreighterWallet';
+// import { useFreighterWallet } from '@/hooks/useFreighterWallet';
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
@@ -14,20 +14,24 @@ const Index = () => {
   const [pastChallenges, setPastChallenges] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showSignInDialog, setShowSignInDialog] = useState(false);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
   
-  const { 
-    isWalletConnected, 
-    publicKey, 
-    isLoading: isWalletLoading, 
-    error: walletError,
-    connectWallet, 
-    disconnectWallet 
-  } = useFreighterWallet();
+  // Temporarily removed wallet hook to debug
+  // const { 
+  //   isWalletConnected, 
+  //   publicKey, 
+  //   isLoading: isWalletLoading, 
+  //   error: walletError,
+  //   connectWallet, 
+  //   disconnectWallet 
+  // } = useFreighterWallet();
 
   // Mock data for demonstration
   useEffect(() => {
+    console.log('Index component mounting...');
     // Simulate loading
     setTimeout(() => {
+      console.log('Loading complete');
       setIsLoading(false);
     }, 1000);
   }, []);
@@ -37,13 +41,9 @@ const Index = () => {
   };
 
   const handleLogin = async () => {
-    // Connect Freighter wallet first
-    await connectWallet();
-    
-    if (walletError) {
-      alert('Please install Freighter wallet extension to continue');
-      return;
-    }
+    console.log('Login clicked');
+    // TODO: Connect Freighter wallet
+    // await connectWallet();
     
     // Mock login - in real app this would be Supabase Auth
     setUser({
@@ -51,7 +51,7 @@ const Index = () => {
       email: 'john.doe@example.com',
       name: 'John Doe',
       leetcode_username: 'john_codes',
-      wallet_address: publicKey
+      wallet_address: 'GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
     });
 
     // Mock challenges data
@@ -106,7 +106,7 @@ const Index = () => {
     setUser(null);
     setActiveChallenges([]);
     setPastChallenges([]);
-    disconnectWallet();
+    setWalletAddress(null);
   };
 
   if (isLoading) {
@@ -148,7 +148,7 @@ const Index = () => {
               }}>
                 <Wallet className="w-5 h-5" style={{ color: '#00FF7F' }} />
                 <span style={{ color: '#00FF7F', fontSize: '0.9rem', fontFamily: 'monospace' }}>
-                  {publicKey ? `${publicKey.slice(0, 4)}...${publicKey.slice(-4)}` : 'Connecting...'}
+                  {user.wallet_address ? `${user.wallet_address.slice(0, 4)}...${user.wallet_address.slice(-4)}` : 'No wallet'}
                 </span>
               </div>
               <Button
@@ -242,21 +242,9 @@ const Index = () => {
               Connect your Freighter wallet to stake XLM and start your coding challenge
             </p>
             
-            {walletError && (
-              <div className="p-3 rounded-lg mb-4" style={{ 
-                backgroundColor: 'rgba(255, 0, 0, 0.1)', 
-                border: '1px solid rgba(255, 0, 0, 0.3)' 
-              }}>
-                <p style={{ color: '#ff4444', fontSize: '0.9rem', textAlign: 'center' }}>
-                  ⚠️ Please install the Freighter wallet extension
-                </p>
-              </div>
-            )}
-            
             <div className="space-y-3">
               <Button
                 onClick={handleLogin}
-                disabled={isWalletLoading}
                 className="w-full"
                 style={{
                   backgroundColor: '#00FF7F',
@@ -269,7 +257,7 @@ const Index = () => {
                 }}
               >
                 <Wallet className="w-5 h-5 mr-3" />
-                {isWalletLoading ? 'Connecting...' : 'Connect Freighter Wallet'}
+                Connect Freighter Wallet
               </Button>
               
               <p style={{ 
