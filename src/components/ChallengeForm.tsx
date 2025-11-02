@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Sparkles, Target, Clock, DollarSign } from 'lucide-react';
+import { Sparkles, Target, Clock, Wallet } from 'lucide-react';
 
 interface ChallengeFormProps {
   userLeetcodeId: string;
@@ -400,18 +400,20 @@ export const ChallengeForm: React.FC<ChallengeFormProps> = ({
                     alignItems: 'center',
                     gap: '8px'
                   }}>
-                    <DollarSign className="w-5 h-5" style={{ color: '#00FF7F' }} />
-                    Your stake (₹)
+                    <Wallet className="w-5 h-5" style={{ color: '#00FF7F' }} />
+                    Your stake (XLM)
                   </Label>
                   
                   <div className="relative">
                     <Input
                       id="stake"
                       type="number"
-                      placeholder="500"
+                      placeholder="10"
                       value={stakeAmount}
                       onChange={(e) => setStakeAmount(e.target.value)}
                       required
+                      step="0.01"
+                      min="1"
                       className="text-xl font-medium"
                       style={{ 
                         backgroundColor: '#0D0D0D', 
@@ -430,8 +432,8 @@ export const ChallengeForm: React.FC<ChallengeFormProps> = ({
                     border: '1px solid rgba(0, 255, 127, 0.2)' 
                   }}>
                     <p style={{ color: '#00FF7F', fontSize: '0.9rem', lineHeight: 1.5 }}>
-                      💡 <strong>How it works:</strong> This amount is only charged if you fail to complete your challenge. 
-                      Success means you keep every rupee and gain the satisfaction of achieving your goal!
+                      💡 <strong>How it works:</strong> Your XLM is locked in a smart contract. If you fail to complete your challenge, 
+                      you lose your stake. Success means you get everything back plus the satisfaction of achieving your goal!
                     </p>
                   </div>
                 </div>

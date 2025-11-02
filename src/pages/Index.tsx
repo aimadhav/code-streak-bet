@@ -5,7 +5,8 @@ import { ChallengeForm } from '@/components/ChallengeForm';
 import { ChallengeSidebar } from '@/components/ChallengeSidebar';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { LogOut, User, Code2, Target, Clock, DollarSign, Sparkles } from 'lucide-react';
+import { LogOut, User, Code2, Wallet, Sparkles } from 'lucide-react';
+import { useFreighterWallet } from '@/hooks/useFreighterWallet';
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
@@ -13,6 +14,15 @@ const Index = () => {
   const [pastChallenges, setPastChallenges] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showSignInDialog, setShowSignInDialog] = useState(false);
+  
+  const { 
+    isWalletConnected, 
+    publicKey, 
+    isLoading: isWalletLoading, 
+    error: walletError,
+    connectWallet, 
+    disconnectWallet 
+  } = useFreighterWallet();
 
   // Mock data for demonstration
   useEffect(() => {
@@ -26,13 +36,22 @@ const Index = () => {
     setShowSignInDialog(true);
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
+    // Connect Freighter wallet first
+    await connectWallet();
+    
+    if (walletError) {
+      alert('Please install Freighter wallet extension to continue');
+      return;
+    }
+    
     // Mock login - in real app this would be Supabase Auth
     setUser({
       id: '1',
       email: 'john.doe@example.com',
       name: 'John Doe',
-      leetcode_username: 'john_codes'
+      leetcode_username: 'john_codes',
+      wallet_address: publicKey
     });
 
     // Mock challenges data
@@ -87,6 +106,7 @@ const Index = () => {
     setUser(null);
     setActiveChallenges([]);
     setPastChallenges([]);
+    disconnectWallet();
   };
 
   if (isLoading) {
@@ -122,10 +142,13 @@ const Index = () => {
           
           {user ? (
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <User className="w-5 h-5" style={{ color: '#AAAAAA' }} />
-                <span style={{ color: '#FFFFFF', fontSize: '1rem' }}>
-                  Welcome back, {user.name}
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ 
+                backgroundColor: 'rgba(0, 255, 127, 0.1)', 
+                border: '1px solid rgba(0, 255, 127, 0.3)' 
+              }}>
+                <Wallet className="w-5 h-5" style={{ color: '#00FF7F' }} />
+                <span style={{ color: '#00FF7F', fontSize: '0.9rem', fontFamily: 'monospace' }}>
+                  {publicKey ? `${publicKey.slice(0, 4)}...${publicKey.slice(-4)}` : 'Connecting...'}
                 </span>
               </div>
               <Button
@@ -153,7 +176,7 @@ const Index = () => {
                 fontWeight: 600
               }}
             >
-              Get Started
+              Connect Wallet
             </Button>
           )}
         </div>
@@ -201,54 +224,70 @@ const Index = () => {
               textAlign: 'center',
               marginBottom: '16px'
             }}>
-              Ready to Start Your Challenge?
+              Connect Your Freighter Wallet
             </DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4 p-4">
+            <div className="flex items-center justify-center gap-3 mb-6">
+              <Wallet className="w-12 h-12" style={{ color: '#00FF7F' }} />
+            </div>
+            
             <p style={{ 
               color: '#AAAAAA', 
               fontSize: '1rem', 
               textAlign: 'center',
               marginBottom: '24px'
             }}>
-              Sign in to create your first coding challenge and start your journey
+              Connect your Freighter wallet to stake XLM and start your coding challenge
             </p>
+            
+            {walletError && (
+              <div className="p-3 rounded-lg mb-4" style={{ 
+                backgroundColor: 'rgba(255, 0, 0, 0.1)', 
+                border: '1px solid rgba(255, 0, 0, 0.3)' 
+              }}>
+                <p style={{ color: '#ff4444', fontSize: '0.9rem', textAlign: 'center' }}>
+                  ⚠️ Please install the Freighter wallet extension
+                </p>
+              </div>
+            )}
             
             <div className="space-y-3">
               <Button
                 onClick={handleLogin}
+                disabled={isWalletLoading}
                 className="w-full"
                 style={{
                   backgroundColor: '#00FF7F',
                   color: '#0D0D0D',
                   borderRadius: '12px',
                   padding: '0 24px',
-                  height: '48px',
+                  height: '56px',
                   fontWeight: 600,
-                  fontSize: '1rem'
+                  fontSize: '1.1rem'
                 }}
               >
-                Sign in with Google
+                <Wallet className="w-5 h-5 mr-3" />
+                {isWalletLoading ? 'Connecting...' : 'Connect Freighter Wallet'}
               </Button>
               
-              <Button
-                onClick={handleLogin}
-                variant="outline"
-                className="w-full"
-                style={{
-                  backgroundColor: 'transparent',
-                  color: '#FFFFFF',
-                  border: '2px solid #2A2A2A',
-                  borderRadius: '12px',
-                  padding: '0 24px',
-                  height: '48px',
-                  fontWeight: 600,
-                  fontSize: '1rem'
-                }}
-              >
-                Sign in with GitHub
-              </Button>
+              <p style={{ 
+                color: '#666', 
+                fontSize: '0.85rem', 
+                textAlign: 'center',
+                lineHeight: 1.5
+              }}>
+                Don't have Freighter?{' '}
+                <a 
+                  href="https://www.freighter.app/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{ color: '#00FF7F', textDecoration: 'underline' }}
+                >
+                  Download it here
+                </a>
+              </p>
             </div>
           </div>
         </DialogContent>
