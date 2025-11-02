@@ -6,7 +6,8 @@ import { ChallengeSidebar } from '@/components/ChallengeSidebar';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LogOut, User, Code2, Wallet, Sparkles } from 'lucide-react';
-// import { useFreighterWallet } from '@/hooks/useFreighterWallet';
+import { useFreighterWallet } from '@/hooks/useFreighterWallet';
+import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
@@ -14,17 +15,16 @@ const Index = () => {
   const [pastChallenges, setPastChallenges] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showSignInDialog, setShowSignInDialog] = useState(false);
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const { toast } = useToast();
   
-  // Temporarily removed wallet hook to debug
-  // const { 
-  //   isWalletConnected, 
-  //   publicKey, 
-  //   isLoading: isWalletLoading, 
-  //   error: walletError,
-  //   connectWallet, 
-  //   disconnectWallet 
-  // } = useFreighterWallet();
+  const { 
+    isConnected: isWalletConnected, 
+    publicKey, 
+    isLoading: isWalletLoading, 
+    error: walletError,
+    connectWallet, 
+    disconnectWallet 
+  } = useFreighterWallet();
 
   // Mock data for demonstration
   useEffect(() => {
@@ -41,72 +41,96 @@ const Index = () => {
   };
 
   const handleLogin = async () => {
-    console.log('Login clicked');
-    // TODO: Connect Freighter wallet
-    // await connectWallet();
+    console.log('Login clicked - connecting wallet...');
     
-    // Mock login - in real app this would be Supabase Auth
-    setUser({
-      id: '1',
-      email: 'john.doe@example.com',
-      name: 'John Doe',
-      leetcode_username: 'john_codes',
-      wallet_address: 'GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
-    });
+    try {
+      await connectWallet();
+      
+      // Wait a bit for publicKey to be set
+      setTimeout(() => {
+        if (publicKey) {
+          // Set user with real wallet address
+          setUser({
+            id: '1',
+            email: 'john.doe@example.com',
+            name: 'John Doe',
+            leetcode_username: 'john_codes',
+            wallet_address: publicKey
+          });
 
-    // Mock challenges data
-    setActiveChallenges([
-      {
-        id: '1',
-        goal_type: 'daily',
-        target_count: 14,
-        stake_amount: 500,
-        start_date: '2025-01-01',
-        end_date: '2025-01-15',
-        status: 'active',
-        current_progress: 8,
-        progress_snapshots: [
-          { date: '2025-01-01', questions_solved: 1 },
-          { date: '2025-01-02', questions_solved: 2 },
-          { date: '2025-01-03', questions_solved: 3 },
-          { date: '2025-01-04', questions_solved: 4 },
-          { date: '2025-01-05', questions_solved: 6 },
-          { date: '2025-01-06', questions_solved: 7 },
-          { date: '2025-01-07', questions_solved: 8 },
-        ]
-      }
-    ]);
+          // Mock challenges data
+          setActiveChallenges([
+            {
+              id: '1',
+              goal_type: 'daily',
+              target_count: 14,
+              stake_amount: 500,
+              start_date: '2025-01-01',
+              end_date: '2025-01-15',
+              status: 'active',
+              current_progress: 8,
+              progress_snapshots: [
+                { date: '2025-01-01', questions_solved: 1 },
+                { date: '2025-01-02', questions_solved: 2 },
+                { date: '2025-01-03', questions_solved: 3 },
+                { date: '2025-01-04', questions_solved: 4 },
+                { date: '2025-01-05', questions_solved: 6 },
+                { date: '2025-01-06', questions_solved: 7 },
+                { date: '2025-01-07', questions_solved: 8 },
+              ]
+            }
+          ]);
 
-    setPastChallenges([
-      {
-        id: '2',
-        goal_type: 'weekly',
-        target_count: 15,
-        stake_amount: 300,
-        start_date: '2024-12-01',
-        end_date: '2024-12-08',
-        status: 'completed',
-        current_progress: 16,
-        progress_snapshots: [
-          { date: '2024-12-01', questions_solved: 2 },
-          { date: '2024-12-02', questions_solved: 4 },
-          { date: '2024-12-03', questions_solved: 7 },
-          { date: '2024-12-04', questions_solved: 9 },
-          { date: '2024-12-05', questions_solved: 12 },
-          { date: '2024-12-06', questions_solved: 14 },
-          { date: '2024-12-07', questions_solved: 16 },
-        ]
-      }
-    ]);
+          setPastChallenges([
+            {
+              id: '2',
+              goal_type: 'weekly',
+              target_count: 15,
+              stake_amount: 300,
+              start_date: '2024-12-01',
+              end_date: '2024-12-08',
+              status: 'completed',
+              current_progress: 16,
+              progress_snapshots: [
+                { date: '2024-12-01', questions_solved: 2 },
+                { date: '2024-12-02', questions_solved: 4 },
+                { date: '2024-12-03', questions_solved: 7 },
+                { date: '2024-12-04', questions_solved: 9 },
+                { date: '2024-12-05', questions_solved: 12 },
+                { date: '2024-12-06', questions_solved: 14 },
+                { date: '2024-12-07', questions_solved: 16 },
+              ]
+            }
+          ]);
 
-    setShowSignInDialog(false);
+          toast({
+            title: "Wallet Connected",
+            description: `Connected to ${publicKey.slice(0, 8)}...${publicKey.slice(-8)}`,
+          });
+
+          setShowSignInDialog(false);
+        }
+      }, 500);
+      
+    } catch (err: any) {
+      console.error('Failed to connect wallet:', err);
+      toast({
+        title: "Connection Failed",
+        description: err.message || "Failed to connect to Freighter wallet",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleLogout = () => {
+    disconnectWallet();
     setUser(null);
     setActiveChallenges([]);
     setPastChallenges([]);
-    setWalletAddress(null);
+    toast({
+      title: "Disconnected",
+      description: "Wallet disconnected successfully",
+    });
   };
 
   if (isLoading) {
@@ -148,7 +172,7 @@ const Index = () => {
               }}>
                 <Wallet className="w-5 h-5" style={{ color: '#00FF7F' }} />
                 <span style={{ color: '#00FF7F', fontSize: '0.9rem', fontFamily: 'monospace' }}>
-                  {user.wallet_address ? `${user.wallet_address.slice(0, 4)}...${user.wallet_address.slice(-4)}` : 'No wallet'}
+                  {publicKey ? `${publicKey.slice(0, 6)}...${publicKey.slice(-6)}` : 'No wallet'}
                 </span>
               </div>
               <Button
