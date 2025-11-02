@@ -4,18 +4,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Sparkles, Target, Clock, Wallet } from 'lucide-react';
+import { Sparkles, Target, Clock, Wallet, User } from 'lucide-react';
+import { createChallengeTransaction, saveChallengeToStorage } from '@/lib/stellar';
+import { getLeetCodeProfile } from '@/lib/leetcode-api';
+import { useToast } from '@/hooks/use-toast';
 
 interface ChallengeFormProps {
   userLeetcodeId: string;
   onGetStarted: () => void;
   isLoggedIn: boolean;
+  publicKey?: string | null;
+  signTransaction?: (xdr: string) => Promise<string>;
 }
 
 export const ChallengeForm: React.FC<ChallengeFormProps> = ({ 
   userLeetcodeId, 
   onGetStarted,
-  isLoggedIn 
+  isLoggedIn,
+  publicKey,
+  signTransaction
 }) => {
   const [goalType, setGoalType] = useState<'daily' | 'weekly' | 'custom'>('daily');
   const [dailyQuestions, setDailyQuestions] = useState('1');
@@ -25,8 +32,44 @@ export const ChallengeForm: React.FC<ChallengeFormProps> = ({
   const [customQuestions, setCustomQuestions] = useState('');
   const [customDays, setCustomDays] = useState('');
   const [stakeAmount, setStakeAmount] = useState('');
+  const [leetcodeUsername, setLeetcodeUsername] = useState(userLeetcodeId);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isVerifyingUsername, setIsVerifyingUsername] = useState(false);
+  const [usernameVerified, setUsernameVerified] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+
+  const verifyLeetCodeUsername = async () => {
+    if (!leetcodeUsername || leetcodeUsername === 'your_username') {
+      toast({
+        title: "Invalid Username",
+        description: "Please enter your LeetCode username",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsVerifyingUsername(true);
+    
+    try {
+      const profile = await getLeetCodeProfile(leetcodeUsername);
+      
+      setUsernameVerified(true);
+      toast({
+        title: "Username Verified! ✓",
+        description: `Connected to ${profile.username}'s LeetCode profile`,
+      });
+    } catch (error: any) {
+      setUsernameVerified(false);
+      toast({
+        title: "Verification Failed",
+        description: "Username not found. Please check and try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsVerifyingUsername(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,37 +79,132 @@ export const ChallengeForm: React.FC<ChallengeFormProps> = ({
       return;
     }
     
+    if (!publicKey || !signTransaction) {
+      toast({
+        title: "Wallet Error",
+        description: "Please connect your wallet to create a challenge",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!usernameVerified) {
+      toast({
+        title: "Verify Username",
+        description: "Please verify your LeetCode username first",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
       // Calculate target count and end date based on goal type
       let targetCount = 0;
       let endDate = new Date();
+      const startDate = new Date();
+      let dailyQuestionsValue = 0;
+      let weeklyQuestionsValue = 0;
+      let weeksValue = 0;
       
       if (goalType === 'daily') {
-        targetCount = parseInt(dailyQuestions) * parseInt(dailyDays);
+        dailyQuestionsValue = parseInt(dailyQuestions);
+        targetCount = dailyQuestionsValue * parseInt(dailyDays);
         endDate.setDate(endDate.getDate() + parseInt(dailyDays));
       } else if (goalType === 'weekly') {
-        targetCount = parseInt(weeklyQuestions) * parseInt(weeklyWeeks);
-        endDate.setDate(endDate.getDate() + (parseInt(weeklyWeeks) * 7));
+        weeklyQuestionsValue = parseInt(weeklyQuestions);
+        weeksValue = parseInt(weeklyWeeks);
+        targetCount = weeklyQuestionsValue * weeksValue;
+        endDate.setDate(endDate.getDate() + (weeksValue * 7));
       } else {
         targetCount = parseInt(customQuestions);
         endDate.setDate(endDate.getDate() + parseInt(customDays));
       }
 
-      // TODO: Save to Supabase and redirect to Stripe
-      console.log('Challenge data:', {
+      // Generate unique challenge ID
+      const challengeId = `challenge_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+      console.log('Creating challenge on Stellar blockchain:', {
+        challengeId,
         goalType,
         targetCount,
         stakeAmount,
+        leetcodeUsername,
         endDate: endDate.toISOString(),
       });
       
-      // Placeholder for Stripe integration
-      alert('Challenge created! Redirecting to payment setup...');
-    } catch (error) {
+      // Create XLM staking transaction
+      toast({
+        title: "Processing Transaction",
+        description: "Creating XLM staking transaction...",
+      });
+
+      const xdr = await createChallengeTransaction(
+        publicKey,
+        stakeAmount,
+        challengeId,
+        {
+          targetCount,
+          endDate: endDate.toISOString(),
+          goalType,
+        }
+      );
+
+      // Sign and submit transaction
+      toast({
+        title: "Signing Transaction",
+        description: "Please approve the transaction in Freighter",
+      });
+
+      const txHash = await signTransaction(xdr);
+
+      // Save challenge data locally
+      saveChallengeToStorage({
+        id: challengeId,
+        userId: publicKey,
+        leetcodeUsername,
+        publicKey,
+        goalType,
+        targetCount,
+        dailyQuestions: dailyQuestionsValue || undefined,
+        weeklyQuestions: weeklyQuestionsValue || undefined,
+        weeks: weeksValue || undefined,
+        stakeAmount,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        status: 'active',
+        transactionHash: txHash,
+        currentProgress: 0,
+        createdAt: new Date().toISOString(),
+      });
+
+      console.log('Challenge created successfully:', { txHash, challengeId });
+
+      toast({
+        title: "Challenge Created! 🎉",
+        description: `Your ${stakeAmount} XLM has been staked. Start solving problems now!`,
+        duration: 5000,
+      });
+
+      // Reset form
+      setStakeAmount('');
+      setGoalType('daily');
+      setDailyQuestions('1');
+      setDailyDays('7');
+      
+      // Reload the page to show the new challenge
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+      
+    } catch (error: any) {
       console.error('Error creating challenge:', error);
-      alert('Failed to create challenge. Please try again.');
+      toast({
+        title: "Transaction Failed",
+        description: error.message || "Failed to create challenge. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -388,6 +526,67 @@ export const ChallengeForm: React.FC<ChallengeFormProps> = ({
                   </div>
                 </div>
               </div>
+
+              {/* LeetCode Username Verification - Only show if logged in */}
+              {isLoggedIn && (
+                <div className="space-y-4">
+                  <Label htmlFor="leetcode-username" style={{ 
+                    color: '#FFFFFF', 
+                    fontWeight: 600, 
+                    fontSize: '1.1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <User className="w-5 h-5" style={{ color: '#00FF7F' }} />
+                    LeetCode Username
+                  </Label>
+                  
+                  <div className="flex gap-3">
+                    <Input
+                      id="leetcode-username"
+                      type="text"
+                      placeholder="your_leetcode_username"
+                      value={leetcodeUsername}
+                      onChange={(e) => {
+                        setLeetcodeUsername(e.target.value);
+                        setUsernameVerified(false);
+                      }}
+                      required
+                      className="flex-1"
+                      style={{ 
+                        backgroundColor: '#0D0D0D', 
+                        border: usernameVerified ? '2px solid #00FF7F' : '2px solid #2A2A2A',
+                        borderRadius: '12px',
+                        padding: '20px 24px',
+                        color: '#FFFFFF',
+                        fontSize: '1rem',
+                        height: '56px'
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      onClick={verifyLeetCodeUsername}
+                      disabled={isVerifyingUsername || !leetcodeUsername || leetcodeUsername === 'your_username'}
+                      style={{
+                        backgroundColor: usernameVerified ? '#00FF7F' : '#2A2A2A',
+                        color: usernameVerified ? '#0D0D0D' : '#FFFFFF',
+                        borderRadius: '12px',
+                        padding: '0 24px',
+                        height: '56px',
+                        minWidth: '120px',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {isVerifyingUsername ? 'Verifying...' : usernameVerified ? 'Verified ✓' : 'Verify'}
+                    </Button>
+                  </div>
+                  
+                  <p style={{ color: '#666', fontSize: '0.875rem' }}>
+                    We'll track your LeetCode submissions to verify challenge completion
+                  </p>
+                </div>
+              )}
 
               {/* Stake Amount - Only show if logged in */}
               {isLoggedIn && (

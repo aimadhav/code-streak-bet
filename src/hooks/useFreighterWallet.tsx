@@ -1,13 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import freighterApi from '@stellar/freighter-api';
+import { getUserBalance, signAndSubmitTransaction } from '@/lib/stellar';
 
 interface UseFreighterWalletReturn {
   isConnected: boolean;
   publicKey: string | null;
   isLoading: boolean;
   error: string | null;
+  balance: number | null;
   connectWallet: () => Promise<void>;
   disconnectWallet: () => void;
+  refreshBalance: () => Promise<void>;
+  signTransaction: (xdr: string) => Promise<string>;
 }
 
 export const useFreighterWallet = (): UseFreighterWalletReturn => {
@@ -15,6 +19,7 @@ export const useFreighterWallet = (): UseFreighterWalletReturn => {
   const [isWalletConnected, setIsWalletConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [balance, setBalance] = useState<number | null>(null);
 
   // Check if Freighter is installed and connected on mount
   useEffect(() => {
@@ -82,14 +87,51 @@ export const useFreighterWallet = (): UseFreighterWalletReturn => {
     setWalletPublicKey(null);
     setIsWalletConnected(false);
     setError(null);
+    setBalance(null);
   }, []);
+
+  const refreshBalance = useCallback(async () => {
+    if (!walletPublicKey) {
+      setBalance(null);
+      return;
+    }
+    
+    try {
+      const accountBalance = await getUserBalance(walletPublicKey);
+      setBalance(accountBalance);
+    } catch (err: any) {
+      console.error('Error fetching balance:', err);
+      setError('Failed to fetch balance');
+    }
+  }, [walletPublicKey]);
+
+  const signTransaction = useCallback(async (xdr: string): Promise<string> => {
+    try {
+      const txHash = await signAndSubmitTransaction(xdr);
+      return txHash;
+    } catch (err: any) {
+      console.error('Error signing transaction:', err);
+      setError(err.message || 'Failed to sign transaction');
+      throw err;
+    }
+  }, []);
+
+  // Refresh balance when wallet is connected
+  useEffect(() => {
+    if (walletPublicKey) {
+      refreshBalance();
+    }
+  }, [walletPublicKey, refreshBalance]);
 
   return {
     isConnected: isWalletConnected,
     publicKey: walletPublicKey,
     isLoading,
     error,
+    balance,
     connectWallet,
     disconnectWallet,
+    refreshBalance,
+    signTransaction,
   };
 };

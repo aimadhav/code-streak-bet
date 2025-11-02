@@ -8,32 +8,33 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { LogOut, User, Code2, Wallet, Sparkles } from 'lucide-react';
 import { useFreighterWallet } from '@/hooks/useFreighterWallet';
 import { useToast } from '@/hooks/use-toast';
+import { startMonitoringAllChallenges, progressMonitor } from '@/lib/progress-monitor';
+import { getUserChallenges } from '@/lib/stellar';
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
   const [activeChallenges, setActiveChallenges] = useState([]);
   const [pastChallenges, setPastChallenges] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false); // Changed to false to show immediately
   const [showSignInDialog, setShowSignInDialog] = useState(false);
   const { toast } = useToast();
+  
+  console.log('Index component rendered');
   
   const { 
     isConnected: isWalletConnected, 
     publicKey, 
     isLoading: isWalletLoading, 
     error: walletError,
+    balance,
     connectWallet, 
-    disconnectWallet 
+    disconnectWallet,
+    signTransaction
   } = useFreighterWallet();
 
-  // Mock data for demonstration
+  // Component mounted - no loading delay needed
   useEffect(() => {
-    console.log('Index component mounting...');
-    // Simulate loading
-    setTimeout(() => {
-      console.log('Loading complete');
-      setIsLoading(false);
-    }, 1000);
+    console.log('Index component mounted successfully');
   }, []);
 
   const handleGetStarted = () => {
@@ -58,50 +59,16 @@ const Index = () => {
             wallet_address: publicKey
           });
 
-          // Mock challenges data
-          setActiveChallenges([
-            {
-              id: '1',
-              goal_type: 'daily',
-              target_count: 14,
-              stake_amount: 500,
-              start_date: '2025-01-01',
-              end_date: '2025-01-15',
-              status: 'active',
-              current_progress: 8,
-              progress_snapshots: [
-                { date: '2025-01-01', questions_solved: 1 },
-                { date: '2025-01-02', questions_solved: 2 },
-                { date: '2025-01-03', questions_solved: 3 },
-                { date: '2025-01-04', questions_solved: 4 },
-                { date: '2025-01-05', questions_solved: 6 },
-                { date: '2025-01-06', questions_solved: 7 },
-                { date: '2025-01-07', questions_solved: 8 },
-              ]
-            }
-          ]);
+          // Load real challenges from storage
+          const userChallenges = getUserChallenges(publicKey);
+          const active = userChallenges.filter(c => c.status === 'active');
+          const past = userChallenges.filter(c => c.status !== 'active');
 
-          setPastChallenges([
-            {
-              id: '2',
-              goal_type: 'weekly',
-              target_count: 15,
-              stake_amount: 300,
-              start_date: '2024-12-01',
-              end_date: '2024-12-08',
-              status: 'completed',
-              current_progress: 16,
-              progress_snapshots: [
-                { date: '2024-12-01', questions_solved: 2 },
-                { date: '2024-12-02', questions_solved: 4 },
-                { date: '2024-12-03', questions_solved: 7 },
-                { date: '2024-12-04', questions_solved: 9 },
-                { date: '2024-12-05', questions_solved: 12 },
-                { date: '2024-12-06', questions_solved: 14 },
-                { date: '2024-12-07', questions_solved: 16 },
-              ]
-            }
-          ]);
+          setActiveChallenges(active as any);
+          setPastChallenges(past as any);
+
+          // Start monitoring active challenges
+          startMonitoringAllChallenges(publicKey);
 
           toast({
             title: "Wallet Connected",
@@ -123,6 +90,9 @@ const Index = () => {
   };
 
   const handleLogout = () => {
+    // Stop all progress monitoring
+    progressMonitor.stopAll();
+    
     disconnectWallet();
     setUser(null);
     setActiveChallenges([]);
@@ -166,14 +136,21 @@ const Index = () => {
           
           {user ? (
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ 
+              <div className="flex items-center gap-3 px-3 py-2 rounded-lg" style={{ 
                 backgroundColor: 'rgba(0, 255, 127, 0.1)', 
                 border: '1px solid rgba(0, 255, 127, 0.3)' 
               }}>
                 <Wallet className="w-5 h-5" style={{ color: '#00FF7F' }} />
-                <span style={{ color: '#00FF7F', fontSize: '0.9rem', fontFamily: 'monospace' }}>
-                  {publicKey ? `${publicKey.slice(0, 6)}...${publicKey.slice(-6)}` : 'No wallet'}
-                </span>
+                <div className="flex flex-col">
+                  <span style={{ color: '#00FF7F', fontSize: '0.75rem', fontFamily: 'monospace' }}>
+                    {publicKey ? `${publicKey.slice(0, 6)}...${publicKey.slice(-6)}` : 'No wallet'}
+                  </span>
+                  {balance !== null && (
+                    <span style={{ color: '#FFFFFF', fontSize: '0.75rem', fontWeight: 600 }}>
+                      {balance.toFixed(2)} XLM
+                    </span>
+                  )}
+                </div>
               </div>
               <Button
                 onClick={handleLogout}
@@ -218,6 +195,8 @@ const Index = () => {
               userLeetcodeId={user?.leetcode_username || 'your_username'} 
               onGetStarted={handleGetStarted}
               isLoggedIn={!!user}
+              publicKey={publicKey}
+              signTransaction={signTransaction}
             />
           </div>
           
