@@ -1,4 +1,4 @@
-# Quick Start Guide 🚀
+##Quick Start Guide 🚀
 
 Get your LeetCode Challenge Betting app running in 5 minutes!
 
