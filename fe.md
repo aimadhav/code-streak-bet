@@ -3,7 +3,7 @@
 
 ---
 
-## 📋 Quick Reference
+## Quick Reference
 
 ### Base URLs
 ```
